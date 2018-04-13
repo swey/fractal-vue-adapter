@@ -1,0 +1,21 @@
+{
+  "name": "@swey/fractal-vue-adapter",
+  "version": "0.0.1",
+  "description": "Vue template adapter for Fractal.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/swey/fractal-vue-adapter.git"
+  },
+  "author": "Sebastian Weyrauch",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/swey/fractal-vue-adapter/issues"
+  },
+  "homepage": "https://github.com/swey/fractal-vue-adapter",
+  "dependencies": {
+    "@frctl/fractal": "^1.0.0-rc.1",
+    "vue": "^2.5.16",
+    "vue-server-renderer": "^2.5.16"
+  }
+}
