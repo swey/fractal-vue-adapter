@@ -1,6 +1,6 @@
 {
   "name": "@swey/fractal-vue-adapter",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Vue template adapter for Fractal.",
   "main": "index.js",
   "repository": {

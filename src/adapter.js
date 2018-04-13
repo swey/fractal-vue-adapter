@@ -4,10 +4,16 @@ const Vue = require('vue');
 const VueServerRenderer = require('vue-server-renderer');
 const fs = require('fs');
 const Adapter = require('@frctl/fractal').Adapter;
+const PathPlugin = require('./plugins/PathPlugin');
 
 class VueAdapter extends Adapter {
 	constructor(source, app, config) {
 		super(null, source);
+
+		this._app = app;
+		this._config = config;
+
+		Vue.use(PathPlugin);
 
 		source.components().items().forEach(item => {
 			// Auto define props based on the keys used in the config
@@ -24,11 +30,26 @@ class VueAdapter extends Adapter {
 	}
 
 	render(path, str, context, meta) {
+		meta = meta || {};
+
 		const renderer = VueServerRenderer.createRenderer();
+
+		const config = this._app.config();
 
 		const vue = new Vue({
 			data: context,
-			template: str
+			template: str,
+			computed: {
+				_self() {
+					return meta.self;
+				},
+				_env() {
+					return meta.env;
+				},
+				_config() {
+					return config;
+				}
+			}
 		});
 
 		return renderer.renderToString(vue).then(html => {
