@@ -15,13 +15,13 @@ class VueAdapter extends Adapter {
 
 		Vue.use(PathPlugin);
 
-		source.components().items().forEach(item => {
+		app.components.flatten().forEach(component => {
 			// Auto define props based on the keys used in the config
-			const props = Object.keys(item.configData.context);
+			const props = Object.keys(component.configData.context);
 
-			// Register all items as Vue components
-			fs.readFileAsync(item.viewPath, 'utf8').then(template => {
-				Vue.component(item.name, {
+			// Register all fractal components as Vue components
+			fs.readFileAsync(component.viewPath, 'utf8').then(template => {
+				Vue.component(component.name, {
 					template,
 					props,
 				});
