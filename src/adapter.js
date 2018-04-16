@@ -17,7 +17,7 @@ class VueAdapter extends Adapter {
 
 		app.components.flatten().forEach(component => {
 			// Auto define props based on the keys used in the config
-			const props = Object.keys(component.configData.context);
+			const props = component.configData ? Object.keys(component.configData.context) : [];
 
 			// Register all fractal components as Vue components
 			fs.readFileAsync(component.viewPath, 'utf8').then(template => {
