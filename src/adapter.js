@@ -13,7 +13,7 @@ class VueAdapter extends Adapter {
 		this._app = app;
 		this._config = config;
 
-		Vue.use(PathPlugin);
+		Vue.use(PathPlugin, app);
 
 		app.components.flatten().forEach(component => {
 			// Auto define props based on the keys used in the config

@@ -4,7 +4,7 @@ const _ = require('lodash');
 const utils = require('@frctl/fractal').utils;
 
 module.exports = {
-	install(Vue) {
+	install(Vue, fractal) {
 		Vue.mixin({
 			methods: {
 				path(path) {
