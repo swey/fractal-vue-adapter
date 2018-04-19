@@ -27,6 +27,12 @@ class VueAdapter extends Adapter {
 				});
 			});
 		});
+
+		// As soon a view changes, the vue component definition needs to be updated
+		this.on('view:updated', this.updateVueComponent.bind(this));
+		this.on('view:removed', this.updateVueComponent.bind(this));
+		this.on('wrapper:updated', this.updateVueComponent.bind(this));
+		this.on('wrapper:removed', this.updateVueComponent.bind(this));
 	}
 
 	render(path, str, context, meta) {
@@ -58,6 +64,19 @@ class VueAdapter extends Adapter {
 		}).catch(err => {
 			console.error(err);
 			return err;
+		});
+	}
+
+	updateVueComponent(view) {
+		const component = this._source.find(view.handle);
+
+		// Auto define props based on the keys used in the config
+		const props = component.configData ? Object.keys(component.configData.context) : [];
+
+		// Update vue component
+		Vue.component(component.name, {
+			template: component.content,
+			props
 		});
 	}
 }
