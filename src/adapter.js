@@ -53,7 +53,8 @@ class VueAdapter extends Adapter {
 		});
 
 		return renderer.renderToString(vue).then(html => {
-			return html;
+			// Return the html without the empty comments used by Vue (v-if usage)
+			return html.replace(/<!---->/g, '');
 		}).catch(err => {
 			console.error(err);
 			return err;
