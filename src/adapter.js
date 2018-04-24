@@ -38,7 +38,7 @@ function parseComponent(content = '', path = '') {
 	}).code;
 
 	// Compile script
-	const script = requireFromString(scriptCode, '').default;
+	const script = requireFromString(scriptCode, path).default;
 
 	return {
 		script,
