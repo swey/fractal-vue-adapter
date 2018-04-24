@@ -5,9 +5,9 @@ const VueServerRenderer = require('vue-server-renderer');
 const fs = require('fs');
 const Adapter = require('@frctl/fractal').Adapter;
 const PathPlugin = require('./plugins/PathPlugin');
-const compiler = require('vue-template-compiler');
+const vueTemplateCompiler = require('vue-template-compiler');
 const babel = require('babel-core');
-const preset = require('babel-preset-env');
+const babelPreset = require('babel-preset-env');
 const requireFromString = require('require-from-string');
 
 class VueAdapter extends Adapter {
@@ -77,7 +77,7 @@ class VueAdapter extends Adapter {
 	updateVueComponent(view) {
 		const component = this._source.find(view.handle);
 
-		const parsedComponent = compiler.parseComponent(component.content);
+		const parsedComponent = vueTemplateCompiler.parseComponent(component.content);
 
 		// Auto define props based on the keys used in the config (only used as fallback if no props were defined)
 		const autoProps = component.configData ? Object.keys(component.configData.context) : [];
@@ -91,7 +91,7 @@ class VueAdapter extends Adapter {
 
 	parseSingleFileVueComponent(content, path = '') {
 		// Parse file content
-		const component = compiler.parseComponent(content);
+		const component = vueTemplateCompiler.parseComponent(content);
 
 		// Not a single file component
 		if (!component.template) {
@@ -107,7 +107,7 @@ class VueAdapter extends Adapter {
 		// Transpile ES6 to consumable script
 		const scriptCode = babel.transform(component.script.content, {
 			presets: [
-				[preset, {
+				[babelPreset, {
 					targets: {
 						node: 'current'
 					}
