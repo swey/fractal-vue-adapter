@@ -81,7 +81,7 @@ class VueAdapter extends Adapter {
 	updateVueComponent(view) {
 		const component = this._source.find(view.handle);
 
-		const parsedComponent = vueTemplateCompiler.parseComponent(component.content);
+		const parsedComponent = this.parseSingleFileVueComponent(component.content, component.viewPath);
 
 		// Auto define props based on the keys used in the config (only used as fallback if no props were defined)
 		const autoProps = component.configData ? Object.keys(component.configData.context) : [];
