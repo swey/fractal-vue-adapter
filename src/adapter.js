@@ -47,6 +47,10 @@ class VueAdapter extends Adapter {
 		const renderer = VueServerRenderer.createRenderer();
 		const parsedComponent = this.parseSingleFileVueComponent(str, path);
 
+		// Don't set props because this will be the root element
+		// -> prop checking only will work if components are used as nested components
+		parsedComponent.script.props = null;
+
 		const config = this._app.config();
 
 		const vue = new Vue(Object.assign({
