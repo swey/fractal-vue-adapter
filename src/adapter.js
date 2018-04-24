@@ -55,8 +55,8 @@ class VueAdapter extends Adapter {
 		Vue.use(PathPlugin, app);
 
 		app.components.flatten().forEach(component => {
-			// Auto define props based on the keys used in the config
-			const props = component.configData ? Object.keys(component.configData.context) : [];
+			// Auto define props based on the keys used in the config (only used as fallback if no props were defined)
+			const autoProps = component.configData ? Object.keys(component.configData.context) : [];
 
 			// Register all fractal components as Vue components
 			fs.readFileAsync(component.viewPath, 'utf8').then(content => {
@@ -64,7 +64,7 @@ class VueAdapter extends Adapter {
 
 				Vue.component(component.name, Object.assign({
 					template: parsedComponent.template,
-					props,
+					props: parsedComponent.script.props ? null : autoProps,
 				}, parsedComponent.script));
 			});
 		});
@@ -112,16 +112,15 @@ class VueAdapter extends Adapter {
 	updateVueComponent(view) {
 		const component = this._source.find(view.handle);
 
-		// TODO: Figure out how to pass path. view.handle?
 		const parsedComponent = compiler.parseComponent(component.content);
 
-		// Auto define props based on the keys used in the config
-		const props = component.configData ? Object.keys(component.configData.context) : [];
+		// Auto define props based on the keys used in the config (only used as fallback if no props were defined)
+		const autoProps = component.configData ? Object.keys(component.configData.context) : [];
 
 		// Update vue component
 		Vue.component(component.name, Object.assign({
 			template: parsedComponent.template,
-			props
+			props: parsedComponent.script.props ? null : autoProps,
 		}, parsedComponent.script));
 	}
 }
