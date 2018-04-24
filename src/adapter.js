@@ -5,6 +5,10 @@ const VueServerRenderer = require('vue-server-renderer');
 const fs = require('fs');
 const Adapter = require('@frctl/fractal').Adapter;
 const PathPlugin = require('./plugins/PathPlugin');
+const vueTemplateCompiler = require('vue-template-compiler');
+const babel = require('babel-core');
+const babelPreset = require('babel-preset-env');
+const requireFromString = require('require-from-string');
 
 class VueAdapter extends Adapter {
 	constructor(source, app, config) {
@@ -16,15 +20,17 @@ class VueAdapter extends Adapter {
 		Vue.use(PathPlugin, app);
 
 		app.components.flatten().forEach(component => {
-			// Auto define props based on the keys used in the config
-			const props = component.configData ? Object.keys(component.configData.context) : [];
+			// Auto define props based on the keys used in the config (only used as fallback if no props were defined)
+			const autoProps = component.configData ? Object.keys(component.configData.context) : [];
 
 			// Register all fractal components as Vue components
-			fs.readFileAsync(component.viewPath, 'utf8').then(template => {
-				Vue.component(component.name, {
-					template,
-					props,
-				});
+			fs.readFileAsync(component.viewPath, 'utf8').then(content => {
+				const parsedComponent = this.parseSingleFileVueComponent(content, component.viewPath);
+
+				Vue.component(component.name, Object.assign({
+					template: parsedComponent.template,
+					props: parsedComponent.script.props ? null : autoProps,
+				}, parsedComponent.script));
 			});
 		});
 
@@ -39,12 +45,17 @@ class VueAdapter extends Adapter {
 		meta = meta || {};
 
 		const renderer = VueServerRenderer.createRenderer();
+		const parsedComponent = this.parseSingleFileVueComponent(str, path);
+
+		// Don't set props because this will be the root element
+		// -> prop checking only will work if components are used as nested components
+		parsedComponent.script.props = null;
 
 		const config = this._app.config();
 
-		const vue = new Vue({
+		const vue = new Vue(Object.assign({
 			data: context,
-			template: str,
+			template: parsedComponent.template,
 			computed: {
 				_self() {
 					return meta.self;
@@ -56,7 +67,7 @@ class VueAdapter extends Adapter {
 					return config;
 				}
 			}
-		});
+		}, parsedComponent.script));
 
 		return renderer.renderToString(vue).then(html => {
 			// Return the html without the empty comments used by Vue (v-if usage)
@@ -70,14 +81,51 @@ class VueAdapter extends Adapter {
 	updateVueComponent(view) {
 		const component = this._source.find(view.handle);
 
-		// Auto define props based on the keys used in the config
-		const props = component.configData ? Object.keys(component.configData.context) : [];
+		const parsedComponent = vueTemplateCompiler.parseComponent(component.content);
+
+		// Auto define props based on the keys used in the config (only used as fallback if no props were defined)
+		const autoProps = component.configData ? Object.keys(component.configData.context) : [];
 
 		// Update vue component
-		Vue.component(component.name, {
-			template: component.content,
-			props
-		});
+		Vue.component(component.name, Object.assign({
+			template: parsedComponent.template,
+			props: parsedComponent.script.props ? null : autoProps,
+		}, parsedComponent.script));
+	}
+
+	parseSingleFileVueComponent(content, path = '') {
+		// Parse file content
+		const component = vueTemplateCompiler.parseComponent(content);
+
+		// Not a single file component
+		if (!component.template) {
+			return {
+				template: content,
+				script: {}
+			}
+		}
+
+		// Extract template
+		const template = component.template.content;
+
+		// Transpile ES6 to consumable script
+		const scriptCode = babel.transform(component.script.content, {
+			presets: [
+				[babelPreset, {
+					targets: {
+						node: 'current'
+					}
+				}]
+			]
+		}).code;
+
+		// Compile script
+		const script = requireFromString(scriptCode, path).default;
+
+		return {
+			template,
+			script
+		};
 	}
 }
 

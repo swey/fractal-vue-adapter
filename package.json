@@ -1,6 +1,6 @@
 {
   "name": "@swey/fractal-vue-adapter",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "Vue template adapter for Fractal.",
   "main": "index.js",
   "repository": {
@@ -15,7 +15,12 @@
   "homepage": "https://github.com/swey/fractal-vue-adapter",
   "dependencies": {
     "@frctl/fractal": "^1.0.0-rc.1",
+    "babel-core": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "lodash.merge": "^4.6.1",
+    "require-from-string": "^2.0.2",
     "vue": "^2.5.16",
-    "vue-server-renderer": "^2.5.16"
+    "vue-server-renderer": "^2.5.16",
+    "vue-template-compiler": "^2.5.16"
   }
 }
