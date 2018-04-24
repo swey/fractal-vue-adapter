@@ -9,7 +9,6 @@ const compiler = require('vue-template-compiler');
 const babel = require('babel-core');
 const preset = require('babel-preset-env');
 const requireFromString = require('require-from-string');
-const merge = require('lodash.merge');
 
 function parseComponent(content = '', path = '') {
 	// Parse file content
@@ -63,7 +62,7 @@ class VueAdapter extends Adapter {
 			fs.readFileAsync(component.viewPath, 'utf8').then(content => {
 				const parsedComponent = parseComponent(content, component.viewPath);
 
-				Vue.component(component.name, merge({
+				Vue.component(component.name, Object.assign({
 					template: parsedComponent.template,
 					props,
 				}, parsedComponent.script));
@@ -85,7 +84,7 @@ class VueAdapter extends Adapter {
 
 		const config = this._app.config();
 
-		const vue = new Vue(merge({
+		const vue = new Vue(Object.assign({
 			data: context,
 			template: parsedComponent.template,
 			computed: {
@@ -120,7 +119,7 @@ class VueAdapter extends Adapter {
 		const props = component.configData ? Object.keys(component.configData.context) : [];
 
 		// Update vue component
-		Vue.component(component.name, merge({
+		Vue.component(component.name, Object.assign({
 			template: parsedComponent.template,
 			props
 		}, parsedComponent.script));
