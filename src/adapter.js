@@ -10,41 +10,6 @@ const babel = require('babel-core');
 const preset = require('babel-preset-env');
 const requireFromString = require('require-from-string');
 
-function parseComponent(content = '', path = '') {
-	// Parse file content
-	const component = compiler.parseComponent(content);
-
-	// Not a single file component
-	if (!component.template) {
-		return {
-			template: content,
-			script: {}
-		}
-	}
-
-	// Extract template
-	const template = component.template.content;
-
-	// Transpile ES6 to consumable script
-	const scriptCode = babel.transform(component.script.content, {
-		presets: [
-			[preset, {
-				targets: {
-					node: 'current'
-				}
-			}]
-		]
-	}).code;
-
-	// Compile script
-	const script = requireFromString(scriptCode, path).default;
-
-	return {
-		script,
-		template
-	};
-}
-
 class VueAdapter extends Adapter {
 	constructor(source, app, config) {
 		super(null, source);
@@ -60,7 +25,7 @@ class VueAdapter extends Adapter {
 
 			// Register all fractal components as Vue components
 			fs.readFileAsync(component.viewPath, 'utf8').then(content => {
-				const parsedComponent = parseComponent(content, component.viewPath);
+				const parsedComponent = this.parseSingleFileVueComponent(content, component.viewPath);
 
 				Vue.component(component.name, Object.assign({
 					template: parsedComponent.template,
@@ -80,7 +45,7 @@ class VueAdapter extends Adapter {
 		meta = meta || {};
 
 		const renderer = VueServerRenderer.createRenderer();
-		const parsedComponent = parseComponent(str, path);
+		const parsedComponent = this.parseSingleFileVueComponent(str, path);
 
 		const config = this._app.config();
 
@@ -122,6 +87,41 @@ class VueAdapter extends Adapter {
 			template: parsedComponent.template,
 			props: parsedComponent.script.props ? null : autoProps,
 		}, parsedComponent.script));
+	}
+
+	parseSingleFileVueComponent(content, path = '') {
+		// Parse file content
+		const component = compiler.parseComponent(content);
+
+		// Not a single file component
+		if (!component.template) {
+			return {
+				template: content,
+				script: {}
+			}
+		}
+
+		// Extract template
+		const template = component.template.content;
+
+		// Transpile ES6 to consumable script
+		const scriptCode = babel.transform(component.script.content, {
+			presets: [
+				[preset, {
+					targets: {
+						node: 'current'
+					}
+				}]
+			]
+		}).code;
+
+		// Compile script
+		const script = requireFromString(scriptCode, path).default;
+
+		return {
+			template,
+			script
+		};
 	}
 }
 
