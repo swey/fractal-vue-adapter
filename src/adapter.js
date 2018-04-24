@@ -7,6 +7,7 @@ const Adapter = require('@frctl/fractal').Adapter;
 const PathPlugin = require('./plugins/PathPlugin');
 const compiler = require('vue-template-compiler');
 const babel = require('babel-core');
+const preset = require('babel-preset-env');
 const requireFromString = require('require-from-string');
 const merge = require('lodash.merge');
 
@@ -28,7 +29,7 @@ function parseComponent(content = '', path = '') {
 	// Transpile ES6 to consumable script
 	const scriptCode = babel.transform(component.script.content, {
 		presets: [
-			['env', {
+			[preset, {
 				targets: {
 					node: 'current'
 				}
