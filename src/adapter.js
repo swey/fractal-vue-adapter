@@ -9,6 +9,7 @@ const vueTemplateCompiler = require('vue-template-compiler');
 const babel = require('babel-core');
 const babelPreset = require('babel-preset-env');
 const requireFromString = require('require-from-string');
+const merge = require('lodash').merge;
 
 class VueAdapter extends Adapter {
 	constructor(source, app, config) {
@@ -51,9 +52,15 @@ class VueAdapter extends Adapter {
 		// -> prop checking only will work if components are used as nested components
 		parsedComponent.script.props = null;
 
+		// Create the data object for the root element, so it can be merged into
+		// the data from context (data from the config files)
+		if (parsedComponent.script.data) {
+			parsedComponent.script.data = parsedComponent.script.data();
+		}
+
 		const config = this._app.config();
 
-		const vue = new Vue(Object.assign({
+		const vue = new Vue(merge({
 			data: context,
 			template: parsedComponent.template,
 			computed: {
