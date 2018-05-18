@@ -40,6 +40,9 @@ class VueAdapter extends Adapter {
 		this.on('view:removed', this.updateVueComponent.bind(this));
 		this.on('wrapper:updated', this.updateVueComponent.bind(this));
 		this.on('wrapper:removed', this.updateVueComponent.bind(this));
+
+		// Fractal does not care about our component imports since they are registered globally
+		require.extensions['.vue'] = () => ({})
 	}
 
 	render(path, str, context, meta) {
@@ -47,6 +50,9 @@ class VueAdapter extends Adapter {
 
 		const renderer = VueServerRenderer.createRenderer();
 		const parsedComponent = this.parseSingleFileVueComponent(str, path);
+
+		// Remove component definitions since they are registered globally
+		parsedComponent.script.components = null;
 
 		// Don't set props because this will be the root element
 		// -> prop checking only will work if components are used as nested components
