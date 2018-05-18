@@ -110,16 +110,16 @@ class VueAdapter extends Adapter {
 		// Parse file content
 		const component = vueTemplateCompiler.parseComponent(content);
 
-		// Not a single file component
-		if (!component.template) {
+		// Not a single file component (Please note: in cases with a render function the template can be missing)
+		if (!component.template && !component.script) {
 			return {
 				template: content,
 				script: {}
 			}
 		}
 
-		// Extract template
-		const template = component.template.content;
+		// Extract template (Please note: in cases with a render function the template can be missing)
+		const template = component.template ? component.template.content : '';
 
 		// Transpile ES6 to consumable script
 		const scriptCode = babel.transform(component.script.content, {
