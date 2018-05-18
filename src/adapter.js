@@ -41,7 +41,7 @@ class VueAdapter extends Adapter {
 		this.on('wrapper:updated', this.updateVueComponent.bind(this));
 		this.on('wrapper:removed', this.updateVueComponent.bind(this));
 
-		// Fractal does not care about our component imports since they are registered globally
+		// Fractal does not need the component imports since they are registered globally
 		require.extensions['.vue'] = () => ({})
 	}
 
