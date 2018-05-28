@@ -66,6 +66,10 @@ class VueAdapter extends Adapter {
 
 		const config = this._app.config();
 
+		// Make sure there is always a yield property defined to avoid Vue warnings
+		// (The variabled used by fractal to pass rendered content to the preview layouts)
+		context.yield = context.yield || '';
+
 		const vue = new Vue(merge({
 			data: context,
 			template: parsedComponent.template,
