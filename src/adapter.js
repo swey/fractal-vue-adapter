@@ -54,24 +54,18 @@ class VueAdapter extends Adapter {
 		// Remove component definitions since they are registered globally
 		parsedComponent.script.components = null;
 
-		// Don't set props because this will be the root element
-		// -> prop checking only will work if components are used as nested components
-		parsedComponent.script.props = null;
-
-		// Create the data object for the root element, so it can be merged into
-		// the data from context (data from the config files)
+		// Create the data object for the root element
 		if (parsedComponent.script.data) {
 			parsedComponent.script.data = parsedComponent.script.data();
 		}
 
 		const config = this._app.config();
 
-		// Make sure there is always a yield property defined to avoid Vue warnings
-		// (The variabled used by fractal to pass rendered content to the preview layouts)
-		context.yield = context.yield || '';
-
 		const vue = new Vue(merge({
-			data: context,
+			propsData: context,
+			data: {
+				yield: context.yield || '' // (The variable is used by fractal to pass rendered content to the preview layouts)
+			},
 			template: parsedComponent.template,
 			computed: {
 				_self() {
