@@ -28,6 +28,9 @@ class VueAdapter extends Adapter {
 			fs.readFileAsync(component.viewPath, 'utf8').then(content => {
 				const parsedComponent = this.parseSingleFileVueComponent(content, component.viewPath);
 
+				// Remove component definitions since they are registered globally
+				parsedComponent.script.components = null;
+
 				Vue.component(component.name, Object.assign({
 					template: parsedComponent.template,
 					props: parsedComponent.script.props ? null : autoProps,
@@ -93,6 +96,9 @@ class VueAdapter extends Adapter {
 		const component = this._source.find(view.handle);
 
 		const parsedComponent = this.parseSingleFileVueComponent(component.content, component.viewPath);
+
+		// Remove component definitions since they are registered globally
+		parsedComponent.script.components = null;
 
 		// Auto define props based on the keys used in the config (only used as fallback if no props were defined)
 		const autoProps = component.configData ? Object.keys(component.configData.context) : [];
