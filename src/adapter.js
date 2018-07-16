@@ -120,7 +120,7 @@ class VueAdapter extends Adapter {
 		const template = component.template ? component.template.content : '';
 
 		// Transpile ES6 to consumable script
-		const scriptCode = babel.transform(component.script.content, {
+		const scriptCode = babel.transform(component.script.content, Object.assign({
 			presets: [
 				[babelPreset, {
 					targets: {
@@ -128,7 +128,7 @@ class VueAdapter extends Adapter {
 					}
 				}]
 			]
-		}).code;
+		}, this._config.babel)).code;
 
 		// Compile script
 		const script = requireFromString(scriptCode, path).default;
