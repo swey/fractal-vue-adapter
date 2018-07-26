@@ -20,32 +20,19 @@ class VueAdapter extends Adapter {
 
 		Vue.use(PathPlugin, app);
 
-		app.components.flatten().forEach(component => {
-			// Auto define props based on the keys used in the config (only used as fallback if no props were defined)
-			const autoProps = component.configData ? Object.keys(component.configData.context) : [];
-
-			// Register all fractal components as Vue components
-			fs.readFileAsync(component.viewPath, 'utf8').then(content => {
-				const parsedComponent = this.parseSingleFileVueComponent(content, component.viewPath);
-
-				// Remove component definitions since they are registered globally
-				parsedComponent.script.components = null;
-
-				Vue.component(component.name, Object.assign({
-					template: parsedComponent.template,
-					props: parsedComponent.script.props ? null : autoProps,
-				}, parsedComponent.script));
-			});
-		});
-
 		// As soon a view changes, the vue component definition needs to be updated
 		this.on('view:updated', this.updateVueComponent.bind(this));
 		this.on('view:removed', this.updateVueComponent.bind(this));
 		this.on('wrapper:updated', this.updateVueComponent.bind(this));
 		this.on('wrapper:removed', this.updateVueComponent.bind(this));
 
-		// Fractal does not need the component imports since they are registered globally
-		require.extensions['.vue'] = () => ({})
+		require.extensions['.vue'] = (module, filename) => {
+			const content = fs.readFileSync(filename, 'utf8');
+
+			const parsedComponent = this.parseSingleFileVueComponent(content, filename);
+
+			module._compile(parsedComponent.scriptCode, filename);
+		}
 	}
 
 	render(path, str, context, meta) {
@@ -53,9 +40,6 @@ class VueAdapter extends Adapter {
 
 		const renderer = VueServerRenderer.createRenderer();
 		const parsedComponent = this.parseSingleFileVueComponent(str, path);
-
-		// Remove component definitions since they are registered globally
-		parsedComponent.script.components = null;
 
 		// Create the data object for the root element
 		if (parsedComponent.script.data) {
@@ -69,7 +53,7 @@ class VueAdapter extends Adapter {
 			data: {
 				yield: context.yield || '' // (The variable is used by fractal to pass rendered content to the preview layouts)
 			},
-			template: parsedComponent.template,
+			template: parsedComponent.template, // TODO can be removed in future versions
 			computed: {
 				_self() {
 					return meta.self;
@@ -93,21 +77,11 @@ class VueAdapter extends Adapter {
 	}
 
 	updateVueComponent(view) {
-		const component = this._source.find(view.handle);
-
-		const parsedComponent = this.parseSingleFileVueComponent(component.content, component.viewPath);
-
-		// Remove component definitions since they are registered globally
-		parsedComponent.script.components = null;
-
-		// Auto define props based on the keys used in the config (only used as fallback if no props were defined)
-		const autoProps = component.configData ? Object.keys(component.configData.context) : [];
-
-		// Update vue component
-		Vue.component(component.name, Object.assign({
-			template: parsedComponent.template,
-			props: parsedComponent.script.props ? null : autoProps,
-		}, parsedComponent.script));
+		Object.keys(require.cache).forEach(key => {
+			if (key.includes('.vue')) {
+				delete require.cache[key];
+			}
+		});
 	}
 
 	parseSingleFileVueComponent(content, path = '') {
@@ -118,12 +92,16 @@ class VueAdapter extends Adapter {
 		if (!component.template && !component.script) {
 			return {
 				template: content,
-				script: {}
+				script: {},
+				scriptCode: '',
 			}
 		}
 
 		// Extract template (Please note: in cases with a render function the template can be missing)
 		const template = component.template ? component.template.content : '';
+
+		// Inject template to script content
+		component.script.content = component.script.content.replace(/export default {/, 'export default { template: '+JSON.stringify(template)+',');
 
 		// Transpile ES6 to consumable script
 		const scriptCode = babel.transform(component.script.content, Object.assign({
@@ -137,11 +115,12 @@ class VueAdapter extends Adapter {
 		}, this._config.babel)).code;
 
 		// Compile script
-		const script = requireFromString(scriptCode, path).default;
+		const script = requireFromString(scriptCode, path).default; // TODO move to render function, not needed globally anymore
 
 		return {
 			template,
-			script
+			script,
+			scriptCode,
 		};
 	}
 }
