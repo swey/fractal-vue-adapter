@@ -20,6 +20,16 @@ class VueAdapter extends Adapter {
 
 		Vue.use(PathPlugin, app);
 
+		this._babelOptions = Object.assign({
+			presets: [
+				[babelPreset, {
+					targets: {
+						node: 'current'
+					}
+				}]
+			]
+		}, this._config.babel);
+
 		// As soon a view changes, the vue component definition needs to be updated
 		this.on('view:updated', this.updateVueComponent.bind(this));
 		this.on('view:removed', this.updateVueComponent.bind(this));
@@ -104,15 +114,7 @@ class VueAdapter extends Adapter {
 		component.script.content = component.script.content.replace(/export default {/, 'export default { template: '+JSON.stringify(template)+',');
 
 		// Transpile ES6 to consumable script
-		const scriptCode = babel.transform(component.script.content, Object.assign({
-			presets: [
-				[babelPreset, {
-					targets: {
-						node: 'current'
-					}
-				}]
-			]
-		}, this._config.babel)).code;
+		const scriptCode = babel.transform(component.script.content, Object.assign({ filename: path }, this._babelOptions)).code;
 
 		// Compile script
 		const script = requireFromString(scriptCode, path).default; // TODO move to render function, not needed globally anymore
