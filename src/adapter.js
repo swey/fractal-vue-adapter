@@ -63,7 +63,7 @@ class VueAdapter extends Adapter {
 			props: Array.isArray(context.props) ? ['yield', '_env', '_config'] : {
 				yield: {
 					type: String,
-					required: true
+					default: ''
 				},
 				_env: {
 					type: Object,
