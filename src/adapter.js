@@ -56,25 +56,26 @@ class VueAdapter extends Adapter {
 			parsedComponent.script.data = parsedComponent.script.data();
 		}
 
-		const config = this._app.config();
+		context._config = this._app.config();
+		context._env = meta.env;
 
 		const vue = new Vue(merge({
-			propsData: context,
-			data: {
-				yield: context.yield || '' // (The variable is used by fractal to pass rendered content to the preview layouts)
-			},
-			template: parsedComponent.template, // TODO can be removed in future versions
-			computed: {
-				_self() {
-					return meta.self;
+			props: Array.isArray(context.props) ? ['yield', '_env', '_config'] : {
+				yield: {
+					type: String,
+					required: true
 				},
-				_env() {
-					return meta.env;
+				_env: {
+					type: Object,
+					required: true
 				},
-				_config() {
-					return config;
+				_config: {
+					type: Object,
+					required: true
 				}
-			}
+			},
+			propsData: context,
+			template: parsedComponent.template
 		}, parsedComponent.script));
 
 		return renderer.renderToString(vue).then(html => {
