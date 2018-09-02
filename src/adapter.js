@@ -10,6 +10,7 @@ const babel = require('babel-core');
 const babelPreset = require('babel-preset-env');
 const requireFromString = require('require-from-string');
 const merge = require('lodash').merge;
+const { basename } = require('path');
 
 class VueAdapter extends Adapter {
 	constructor(source, app, config) {
@@ -31,6 +32,8 @@ class VueAdapter extends Adapter {
 			]
 		}, this._config.babel);
 
+		this._vueRenderer = VueServerRenderer.createRenderer();
+
 		// As soon a view changes, the vue component definition needs to be updated
 		this.on('view:updated', this.updateVueComponent.bind(this));
 		this.on('view:removed', this.updateVueComponent.bind(this));
@@ -49,18 +52,14 @@ class VueAdapter extends Adapter {
 	render(path, str, context, meta) {
 		meta = meta || {};
 
-		const renderer = VueServerRenderer.createRenderer();
 		const parsedComponent = this.parseSingleFileVueComponent(str, path);
-
-		// Create the data object for the root component
-		if (parsedComponent.script.data) {
-			parsedComponent.script.data = parsedComponent.script.data();
-		}
 
 		context._config = this._appConfig;
 		context._env = meta.env;
 
-		const vue = new Vue(merge({
+		const VueComponent = Vue.extend(merge({
+			name: basename(path, '.vue').replace(/_/, ''),
+			__file: path,
 			props: Array.isArray(context.props) ? ['yield', '_env', '_config'] : {
 				yield: {
 					type: String,
@@ -75,11 +74,14 @@ class VueAdapter extends Adapter {
 					required: true
 				}
 			},
-			propsData: context,
 			template: parsedComponent.template
 		}, parsedComponent.script));
 
-		return renderer.renderToString(vue).then(html => {
+		const vm = new Vue({
+			render: createElement => createElement(VueComponent, { props: context }) // Please note: Needs to be "props" instead of "propsData" in this case
+		});
+
+		return this._vueRenderer.renderToString(vm).then(html => {
 			// Return the html without the empty comments used by Vue (v-if usage)
 			return html.replace(/<!---->/g, '');
 		}).catch(err => {
@@ -113,7 +115,7 @@ class VueAdapter extends Adapter {
 		const template = component.template ? component.template.content : '';
 
 		// Inject template to script content
-		component.script.content = component.script.content.replace(/export default {/, 'export default { template: '+JSON.stringify(template)+',');
+		component.script.content = component.script.content.replace(/export default {/, `export default { template: ${JSON.stringify(template)}, __file: '${path}', `)
 
 		// Transpile ES6 to consumable script
 		const scriptCode = babel.transform(component.script.content, Object.assign({ filename: path }, this._babelOptions)).code;
