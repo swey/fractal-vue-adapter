@@ -17,6 +17,7 @@ class VueAdapter extends Adapter {
 
 		this._app = app;
 		this._config = config;
+		this._appConfig = Object.assign({}, this._app.config(), { docs: null });
 
 		Vue.use(PathPlugin, app);
 
@@ -51,12 +52,12 @@ class VueAdapter extends Adapter {
 		const renderer = VueServerRenderer.createRenderer();
 		const parsedComponent = this.parseSingleFileVueComponent(str, path);
 
-		// Create the data object for the root element
+		// Create the data object for the root component
 		if (parsedComponent.script.data) {
 			parsedComponent.script.data = parsedComponent.script.data();
 		}
 
-		context._config = this._app.config();
+		context._config = this._appConfig;
 		context._env = meta.env;
 
 		const vue = new Vue(merge({
