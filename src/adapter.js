@@ -10,7 +10,6 @@ const babel = require('babel-core');
 const babelPreset = require('babel-preset-env');
 const requireFromString = require('require-from-string');
 const merge = require('lodash').merge;
-const { basename } = require('path');
 
 class VueAdapter extends Adapter {
 	constructor(source, app, config) {
@@ -58,7 +57,6 @@ class VueAdapter extends Adapter {
 		context._env = meta.env;
 
 		const VueComponent = Vue.extend(merge({
-			name: basename(path, '.vue').replace(/_/, ''),
 			__file: path,
 			props: Array.isArray(context.props) ? ['yield', '_env', '_config'] : {
 				yield: {
