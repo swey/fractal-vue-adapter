@@ -11,6 +11,8 @@ const babelPreset = require('babel-preset-env');
 const requireFromString = require('require-from-string');
 const merge = require('lodash').merge;
 
+const DEFAULT_DOCTYPE = '<!DOCTYPE html>\n';
+
 class VueAdapter extends Adapter {
 	constructor(source, app, config) {
 		super(null, source);
@@ -80,6 +82,8 @@ class VueAdapter extends Adapter {
 		});
 
 		return this._vueRenderer.renderToString(vm).then(html => {
+			// Add docType (which well be removed by Vue Renderer
+			html = this._config.docType + html;
 			// Return the html without the empty comments used by Vue (v-if usage)
 			return html.replace(/<!---->/g, '');
 		}).catch(err => {
@@ -131,6 +135,8 @@ class VueAdapter extends Adapter {
 
 module.exports = config => {
 	config = config || {};
+
+	config.docType = config.docType || DEFAULT_DOCTYPE;
 
 	return {
 		register(source, app) {
