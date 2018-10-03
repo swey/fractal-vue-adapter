@@ -55,15 +55,20 @@ class VueAdapter extends Adapter {
 
 		const parsedComponent = this.parseSingleFileVueComponent(str, path);
 
-		context._config = this._appConfig;
+		context._target = meta.target;
 		context._env = meta.env;
+		context._config = this._appConfig;
 
 		const VueComponent = Vue.extend(merge({
 			__file: path,
-			props: Array.isArray(context.props) ? ['yield', '_env', '_config'] : {
+			props: Array.isArray(parsedComponent.script.props) ? ['yield', '_target', '_env', '_config'] : {
 				yield: {
 					type: String,
 					default: ''
+				},
+				_target: {
+					type: Object,
+					default: null
 				},
 				_env: {
 					type: Object,
