@@ -89,8 +89,7 @@ class VueAdapter extends Adapter {
 		return this._vueRenderer.renderToString(vm).then(html => {
 			// Add docType (which well be removed by Vue Renderer
 			html = this._config.docType + html;
-			// Return the html without the empty comments used by Vue (v-if usage)
-			return html.replace(/<!---->/g, '');
+			return html;
 		}).catch(err => {
 			console.error(err);
 			return err;
