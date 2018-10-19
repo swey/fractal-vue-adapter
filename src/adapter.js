@@ -35,11 +35,8 @@ class VueAdapter extends Adapter {
 
 		this._vueRenderer = VueServerRenderer.createRenderer();
 
-		// As soon a view changes, the vue component definition needs to be updated
-		this.on('view:updated', this.updateVueComponent.bind(this));
-		this.on('view:removed', this.updateVueComponent.bind(this));
-		this.on('wrapper:updated', this.updateVueComponent.bind(this));
-		this.on('wrapper:removed', this.updateVueComponent.bind(this));
+		// As soon a source changes, the vue component definition needs to be updated
+		source.on('updated', this.clearRequireCache.bind(this));
 
 		require.extensions['.vue'] = (module, filename) => {
 			const content = fs.readFileSync(filename, 'utf8');
@@ -96,14 +93,6 @@ class VueAdapter extends Adapter {
 		});
 	}
 
-	updateVueComponent(view) {
-		Object.keys(require.cache).forEach(key => {
-			if (key.includes('.vue')) {
-				delete require.cache[key];
-			}
-		});
-	}
-
 	parseSingleFileVueComponent(content, path = '') {
 		// Parse file content
 		const component = vueTemplateCompiler.parseComponent(content);
@@ -134,6 +123,14 @@ class VueAdapter extends Adapter {
 			script,
 			scriptCode,
 		};
+	}
+
+	clearRequireCache() {
+		Object.keys(require.cache).forEach(key => {
+			if (key.includes('.vue')) {
+				delete require.cache[key];
+			}
+		});
 	}
 }
 
