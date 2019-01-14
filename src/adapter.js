@@ -11,7 +11,7 @@ const babelPreset = require('babel-preset-env');
 const requireFromString = require('require-from-string');
 const merge = require('lodash').merge;
 
-const DEFAULT_DOCTYPE = '<!DOCTYPE html>\n';
+const DEFAULT_PAGE_TEMPLATE = '<!DOCTYPE html>\n<!--vue-ssr-outlet-->';
 
 class VueAdapter extends Adapter {
 	constructor(source, app, config) {
@@ -32,6 +32,10 @@ class VueAdapter extends Adapter {
 				}]
 			]
 		}, this._config.babel);
+
+		this._vuePageRenderer = VueServerRenderer.createRenderer({
+			template: config.pageTemplate
+		});
 
 		this._vueRenderer = VueServerRenderer.createRenderer();
 
@@ -83,11 +87,10 @@ class VueAdapter extends Adapter {
 			render: createElement => createElement(VueComponent, { props: context }) // Please note: Needs to be "props" instead of "propsData" in this case
 		});
 
-		return this._vueRenderer.renderToString(vm).then(html => {
-			// Add docType (which well be removed by Vue Renderer
-			html = this._config.docType + html;
-			return html;
-		}).catch(err => {
+		// Only use the page renderer with page template for the preview layout rendering (if meta has "target" or context has "yield")
+		const renderer = meta.target ? this._vuePageRenderer : this._vueRenderer;
+
+		return renderer.renderToString(vm).catch(err => {
 			console.error(err);
 			return err;
 		});
@@ -137,7 +140,7 @@ class VueAdapter extends Adapter {
 module.exports = config => {
 	config = config || {};
 
-	config.docType = config.docType || DEFAULT_DOCTYPE;
+	config.pageTemplate = config.pageTemplate || DEFAULT_PAGE_TEMPLATE;
 
 	return {
 		register(source, app) {
