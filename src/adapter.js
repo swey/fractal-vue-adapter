@@ -8,8 +8,6 @@ const PathPlugin = require('./plugins/PathPlugin');
 const vueTemplateCompiler = require('vue-template-compiler');
 const babel = require('babel-core');
 const babelPreset = require('babel-preset-env');
-const requireFromString = require('require-from-string');
-const merge = require('lodash').merge;
 
 const DEFAULT_PAGE_TEMPLATE = '<!DOCTYPE html>\n<!--vue-ssr-outlet-->';
 
@@ -45,43 +43,24 @@ class VueAdapter extends Adapter {
 		require.extensions['.vue'] = (module, filename) => {
 			const content = fs.readFileSync(filename, 'utf8');
 
-			const parsedComponent = this.parseSingleFileVueComponent(content, filename);
-
-			module._compile(parsedComponent.scriptCode, filename);
-		}
+			try {
+				const parsedComponent = this.parseSingleFileVueComponent(content, filename);
+				module._compile(parsedComponent, filename);
+			} catch (error) {
+				console.warn(error);
+				throw new Error(error);
+			}
+		};
 	}
 
 	render(path, str, context, meta) {
 		meta = meta || {};
 
-		const parsedComponent = this.parseSingleFileVueComponent(str, path);
-
 		context._target = meta.target;
 		context._env = meta.env;
 		context._config = this._appConfig;
 
-		const VueComponent = Vue.extend(merge({
-			__file: path,
-			props: Array.isArray(parsedComponent.script.props) ? ['yield', '_target', '_env', '_config'] : {
-				yield: {
-					type: String,
-					default: ''
-				},
-				_target: {
-					type: Object,
-					default: null
-				},
-				_env: {
-					type: Object,
-					required: true
-				},
-				_config: {
-					type: Object,
-					required: true
-				}
-			},
-			template: parsedComponent.template
-		}, parsedComponent.script));
+		const VueComponent = require(path).default;
 
 		const vm = new Vue({
 			render: createElement => createElement(VueComponent, { props: context }) // Please note: Needs to be "props" instead of "propsData" in this case
@@ -103,29 +82,20 @@ class VueAdapter extends Adapter {
 		// Not a single file component (Please note: in cases with a render function the template can be missing)
 		if (!component.template && !component.script) {
 			return {
-				template: content,
-				script: {},
-				scriptCode: '',
-			}
+				template: content
+			};
 		}
 
 		// Extract template (Please note: in cases with a render function the template can be missing)
-		const template = component.template ? component.template.content : '';
+		const template = component.template ? component.template.content : null;
 
-		// Inject template to script content
-		component.script.content = component.script.content.replace(/export default {/, `export default { template: ${JSON.stringify(template)}, __file: '${path}', `)
+		if (template) {
+			// Inject template to script content
+			component.script.content = component.script.content.replace(/export default {/, `export default { template: ${JSON.stringify(template)}, __file: '${path}', `);
+		}
 
 		// Transpile ES6 to consumable script
-		const scriptCode = babel.transform(component.script.content, Object.assign({ filename: path }, this._babelOptions)).code;
-
-		// Compile script
-		const script = requireFromString(scriptCode, path).default; // TODO move to render function, not needed globally anymore
-
-		return {
-			template,
-			script,
-			scriptCode,
-		};
+		return babel.transform(component.script.content, Object.assign({ filename: path }, this._babelOptions)).code;
 	}
 
 	clearRequireCache() {
@@ -148,5 +118,5 @@ module.exports = config => {
 
 			return adapter;
 		}
-	}
+	};
 };
